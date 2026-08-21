@@ -1,0 +1,24 @@
+# OCI settings and local credentials
+config.yaml
+.env
+.env.*
+!.env.example
+
+# Python environments and bytecode
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Generated validation artifacts
+outputs/
+logs/
+
+# Embedded source repositories not included in this validation-utilities repo
+ome/
+genai-data-plane/
+
+# Local editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
