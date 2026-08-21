@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Validate OCI Responses API text output and MCP tool calling across listed models."""
+"""Validate OCI Responses API text output and remote MCP tool calling.
+
+The script reads OCI settings from local ``config.yaml`` and uses the configured
+OCI CLI profile to sign requests. It first checks text output for every model in
+the configured compartment, then checks MCP tool execution for response-capable
+models, producing timestamped HTML and log artifacts under ``outputs/`` and
+``logs/`` respectively.
+"""
 
 from __future__ import annotations
 
@@ -29,15 +36,18 @@ class Tee:
     """Write console output to a run log without hiding it from the caller."""
 
     def __init__(self, *streams: Any) -> None:
+        """Store the output streams that should receive each write."""
         self.streams = streams
 
     def write(self, data: str) -> int:
+        """Write and flush text to every configured stream."""
         for stream in self.streams:
             stream.write(data)
             stream.flush()
         return len(data)
 
     def flush(self) -> None:
+        """Flush every configured stream."""
         for stream in self.streams:
             stream.flush()
 
@@ -57,10 +67,12 @@ def load_settings() -> dict[str, str]:
 
 
 def normalize_profile(profile: str) -> str:
+    """Convert the convenient lowercase default profile name to OCI's canonical form."""
     return "DEFAULT" if profile.lower() == "default" else profile
 
 
 def list_models(config: dict[str, str], compartment_id: str) -> list[object]:
+    """List and deterministically sort Generative AI models in a compartment."""
     client = oci.generative_ai.GenerativeAiClient(config)
     response = oci.pagination.list_call_get_all_results(client.list_models, compartment_id=compartment_id)
     return sorted(response.data, key=lambda item: (item.display_name or "", item.id))
@@ -72,6 +84,7 @@ def select_models(models: list[object], include: list[str], exclude: list[str]) 
     exclude_terms = [term.lower() for term in exclude]
 
     def searchable(model: object) -> str:
+        """Combine a model's identifying fields into lowercase filter text."""
         return " ".join((str(model.display_name or ""), str(model.id or ""), str(model.vendor or ""))).lower()
 
     selected = []
@@ -89,6 +102,7 @@ def select_models(models: list[object], include: list[str], exclude: list[str]) 
 
 
 def response_url(region: str) -> str:
+    """Build the regional OCI OpenAI-compatible Responses API URL."""
     return f"https://inference.generativeai.{region}.oci.oraclecloud.com/openai/v1/responses"
 
 
@@ -140,6 +154,7 @@ def validate_mcp(config: dict[str, str], project_id: str, model: object, args: a
 
 
 def render_html(results: list[dict[str, Any]], generated_at: datetime, args: argparse.Namespace) -> str:
+    """Render the provider-grouped, filterable combined Response and MCP report."""
     response_results = [result for result in results if result["phase"] == "Response"]
     mcp_results = [result for result in results if result["phase"] == "MCP"]
     passed = sum(result["status"] == "passed" for result in results)
@@ -183,6 +198,7 @@ def render_html(results: list[dict[str, Any]], generated_at: datetime, args: arg
 
 
 def main() -> int:
+    """Configure CLI options and tee console output to a timestamped log file."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--include", action="append", default=[], metavar="TERM", help="Only validate models matching name, ID, or vendor; repeatable.")
     parser.add_argument("--exclude", action="append", default=[], metavar="TERM", help="Skip models matching name, ID, or vendor; repeatable.")
