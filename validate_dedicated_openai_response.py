@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Validate an OCI Generative AI dedicated endpoint with the OpenAI Responses API."""
+"""Validate an OCI Generative AI dedicated endpoint through the Responses API.
+
+The required endpoint OCID is supplied as the OpenAI-compatible ``model`` value,
+and the region selects OCI's regional ``/openai/v1/responses`` URL. Requests are
+signed with an OCI CLI profile; a Generative AI project OCID can be supplied when
+required by the target environment.
+"""
 
 from __future__ import annotations
 
@@ -41,6 +47,7 @@ def extract_output_text(data: dict[str, Any]) -> str:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the dedicated-endpoint location, authentication, and request options."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--endpoint-ocid",
@@ -76,6 +83,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Submit one signed validation request and return a shell-friendly status code."""
     args = parse_args()
     if args.timeout <= 0:
         print("Error: --timeout must be greater than zero.", file=sys.stderr)

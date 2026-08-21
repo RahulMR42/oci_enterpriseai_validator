@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""List the Generative AI models available in the configured OCI compartment."""
+"""Generate an inventory of OCI Generative AI models in the configured compartment.
+
+Reads the OCI CLI profile and compartment OCID from the local ``config.yaml`` file,
+uses OCI CLI credentials for authentication, and writes either an HTML report or a
+plain-text inventory. Generated reports are stored in ``outputs/``.
+"""
 
 from __future__ import annotations
 
@@ -123,6 +128,7 @@ def render_html(models: list[object], generated_at: datetime) -> str:
 
 
 def print_text(models: list[object]) -> None:
+    """Print a compact terminal-friendly inventory of the discovered models."""
     if not models:
         print("No Generative AI models are available in this compartment.")
         return
@@ -136,6 +142,7 @@ def print_text(models: list[object]) -> None:
 
 
 def main() -> int:
+    """Parse CLI options, list accessible models, and emit the requested report."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",
